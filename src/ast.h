@@ -23,4 +23,7 @@ typedef struct ASTNode {
 ASTNode *create_ast_node(NodeType type, const char *value, ASTNode *left, ASTNode *right);
 void free_ast_node(ASTNode *node);
 
+// Utility for debugging - print the AST structure in a readable form.
+void print_ast(ASTNode *node, int indent);
+
 #endif // AST_H
