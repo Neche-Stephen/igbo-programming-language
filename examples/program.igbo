@@ -1,0 +1,15 @@
+dee aha = "Emeka"
+dee omimi = 25
+gosi("Ndewo! Aha m bu:")
+gosi(aha)
+ma omimi >= 18 {
+    gosi("I bu okenye")
+} mana {
+    gosi("I bu nwata")
+}
+dee count = 1
+mgbe count <= 3 {
+    gosi("Count: ")
+    gosi(count)
+    dee count = count + 1
+}

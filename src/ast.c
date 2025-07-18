@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
-ASTNode *create_ast_node(NodeType type, const char *value, ASTNode *left, ASTNode *right) {
+ASTNode *create_ast_node(NodeType type, const char *value, ASTNode *left, ASTNode *right, ASTNode *third) {
     ASTNode *node = (ASTNode *)malloc(sizeof(ASTNode));
     if (!node) {
         report_error("Memory allocation failed for AST node", -1);
@@ -13,6 +13,7 @@ ASTNode *create_ast_node(NodeType type, const char *value, ASTNode *left, ASTNod
     node->value = value ? string_duplicate(value) : NULL;
     node->left = left;
     node->right = right;
+    node->third = third;
     return node;
 }
 
@@ -20,6 +21,7 @@ void free_ast_node(ASTNode *node) {
     if (!node) return;
     free_ast_node(node->left);
     free_ast_node(node->right);
+    free_ast_node(node->third);
     free(node->value);
     free(node);
 }
@@ -50,6 +52,31 @@ void print_ast(ASTNode *node, int indent) {
             printf("PrintStmt\n");
             print_ast(node->left, indent + 2);
             break;
+        case NODE_IF_STMT:
+            indent_spaces(indent);
+            printf("IfStmt\n");
+            indent_spaces(indent + 2);
+            printf("Condition:\n");
+            print_ast(node->left, indent + 4);
+            indent_spaces(indent + 2);
+            printf("Then:\n");
+            print_ast(node->right, indent + 4);
+            if (node->third) {
+                indent_spaces(indent + 2);
+                printf("Else:\n");
+                print_ast(node->third, indent + 4);
+            }
+            break;
+        case NODE_WHILE_STMT:
+            indent_spaces(indent);
+            printf("WhileStmt\n");
+            indent_spaces(indent + 2);
+            printf("Condition:\n");
+            print_ast(node->left, indent + 4);
+            indent_spaces(indent + 2);
+            printf("Body:\n");
+            print_ast(node->right, indent + 4);
+            break;
         case NODE_BINARY_EXPR:
             indent_spaces(indent);
             printf("BinaryExpr '%s'\n", node->value);
@@ -67,6 +94,10 @@ void print_ast(ASTNode *node, int indent) {
         case NODE_STRING:
             indent_spaces(indent);
             printf("String \"%s\"\n", node->value);
+            break;
+        case NODE_BOOL:
+            indent_spaces(indent);
+            printf("Bool %s\n", node->value);
             break;
         default:
             indent_spaces(indent);
