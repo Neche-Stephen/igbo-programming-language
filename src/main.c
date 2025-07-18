@@ -3,23 +3,29 @@
 #include "lexer.h"
 #include "ast.h"
 #include "util.h"
+#include "parser.h"
 
-// Simple test function demonstrating the lexer
-static void test_tokenize(void) {
-    const char *code = "dee aha = \"Emeka\"";
-    Token *tokens = tokenize(code);
-    if (!tokens) return;
+// Simple test function demonstrating the parser
+static void test_parser(void) {
+    const char *tests[] = {
+        "dee aha = \"Emeka\"",
+        "gosi(aha)",
+        "dee omimi = 20 + 5"
+    };
 
-    printf("Tokenizing: %s\n", code);
-    for (size_t i = 0; tokens[i].type != TOKEN_EOF; ++i) {
-        const char *value = tokens[i].value ? tokens[i].value : "";
-        printf("%s -> %s\n", token_type_string(tokens[i].type), value);
+    for (size_t t = 0; t < 3; ++t) {
+        printf("\nParsing: %s\n", tests[t]);
+        Token *tokens = tokenize(tests[t]);
+        if (!tokens) continue;
+        ASTNode *ast = parse(tokens);
+        print_ast(ast, 0);
+        free_ast_node(ast);
+        free_tokens(tokens);
     }
-    free_tokens(tokens);
 }
 
 int main(void) {
     printf("Igbo Programming Language Interpreter\n");
-    test_tokenize();
+    test_parser();
     return 0;
 }
