@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -std=c99 -Wall -Wextra -I./src
-SRC = src/main.c src/token.c src/ast.c src/util.c
+SRC = src/main.c src/token.c src/ast.c src/util.c src/lexer.c
 OBJ = $(SRC:.c=.o)
 TARGET = igbo
 
