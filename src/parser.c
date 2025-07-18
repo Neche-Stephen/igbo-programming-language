@@ -38,6 +38,7 @@ static void parser_error(Parser *p, const char *message) {
 
 // Forward declarations
 static ASTNode *statement(Parser *p);
+static ASTNode *block(Parser *p);
 static ASTNode *expression(Parser *p);
 static ASTNode *equality(Parser *p);
 static ASTNode *comparison(Parser *p);
@@ -53,12 +54,36 @@ static ASTNode *program(Parser *p) {
     while (!is_at_end(p)) {
         ASTNode *stmt = statement(p);
         if (!stmt) return head; // error already reported
-        ASTNode *node = create_ast_node(NODE_PROGRAM, NULL, stmt, NULL);
+        ASTNode *node = create_ast_node(NODE_PROGRAM, NULL, stmt, NULL, NULL);
         if (!head)
             head = node;
         else
             tail->right = node;
         tail = node;
+    }
+    return head;
+}
+
+// block -> "{" statement* "}"
+static ASTNode *block(Parser *p) {
+    if (!match(p, TOKEN_LBRACE)) {
+        parser_error(p, "Expected '{' to start block");
+        return NULL;
+    }
+    ASTNode *head = NULL;
+    ASTNode *tail = NULL;
+    while (!check(p, TOKEN_RBRACE) && !is_at_end(p)) {
+        ASTNode *stmt = statement(p);
+        if (!stmt) return head;
+        ASTNode *node = create_ast_node(NODE_PROGRAM, NULL, stmt, NULL, NULL);
+        if (!head)
+            head = node;
+        else
+            tail->right = node;
+        tail = node;
+    }
+    if (!match(p, TOKEN_RBRACE)) {
+        parser_error(p, "Expected '}' after block");
     }
     return head;
 }
@@ -78,7 +103,21 @@ static ASTNode *statement(Parser *p) {
         }
         ASTNode *value = expression(p);
         if (!value) return NULL;
-        return create_ast_node(NODE_VAR_DECL, name->value, value, NULL);
+        return create_ast_node(NODE_VAR_DECL, name->value, value, NULL, NULL);
+    }
+    if (match(p, TOKEN_MA)) {
+        ASTNode *cond = expression(p);
+        ASTNode *thenBranch = block(p);
+        ASTNode *elseBranch = NULL;
+        if (match(p, TOKEN_MANA)) {
+            elseBranch = block(p);
+        }
+        return create_ast_node(NODE_IF_STMT, NULL, cond, thenBranch, elseBranch);
+    }
+    if (match(p, TOKEN_MGBE)) {
+        ASTNode *cond = expression(p);
+        ASTNode *body = block(p);
+        return create_ast_node(NODE_WHILE_STMT, NULL, cond, body, NULL);
     }
     if (match(p, TOKEN_GOSI)) {
         if (!match(p, TOKEN_LPAREN)) {
@@ -91,7 +130,7 @@ static ASTNode *statement(Parser *p) {
             parser_error(p, "Expected ')' after expression");
             return NULL;
         }
-        return create_ast_node(NODE_PRINT_STMT, NULL, expr, NULL);
+        return create_ast_node(NODE_PRINT_STMT, NULL, expr, NULL, NULL);
     }
     // exprStmt: just an expression on its own
     return expression(p);
@@ -108,7 +147,7 @@ static ASTNode *equality(Parser *p) {
     while (match(p, TOKEN_EQUAL) || match(p, TOKEN_NOT_EQUAL)) {
         Token *op = previous(p);
         ASTNode *right = comparison(p);
-        node = create_ast_node(NODE_BINARY_EXPR, op->value, node, right);
+        node = create_ast_node(NODE_BINARY_EXPR, op->value, node, right, NULL);
     }
     return node;
 }
@@ -120,7 +159,7 @@ static ASTNode *comparison(Parser *p) {
            match(p, TOKEN_GREATER_EQUAL) || match(p, TOKEN_LESS_EQUAL)) {
         Token *op = previous(p);
         ASTNode *right = term(p);
-        node = create_ast_node(NODE_BINARY_EXPR, op->value, node, right);
+        node = create_ast_node(NODE_BINARY_EXPR, op->value, node, right, NULL);
     }
     return node;
 }
@@ -131,7 +170,7 @@ static ASTNode *term(Parser *p) {
     while (match(p, TOKEN_PLUS) || match(p, TOKEN_MINUS)) {
         Token *op = previous(p);
         ASTNode *right = factor(p);
-        node = create_ast_node(NODE_BINARY_EXPR, op->value, node, right);
+        node = create_ast_node(NODE_BINARY_EXPR, op->value, node, right, NULL);
     }
     return node;
 }
@@ -142,7 +181,7 @@ static ASTNode *factor(Parser *p) {
     while (match(p, TOKEN_MULTIPLY) || match(p, TOKEN_DIVIDE)) {
         Token *op = previous(p);
         ASTNode *right = unary(p);
-        node = create_ast_node(NODE_BINARY_EXPR, op->value, node, right);
+        node = create_ast_node(NODE_BINARY_EXPR, op->value, node, right, NULL);
     }
     return node;
 }
@@ -156,15 +195,21 @@ static ASTNode *unary(Parser *p) {
 static ASTNode *primary(Parser *p) {
     if (match(p, TOKEN_NUMBER)) {
         Token *num = previous(p);
-        return create_ast_node(NODE_NUMBER, num->value, NULL, NULL);
+        return create_ast_node(NODE_NUMBER, num->value, NULL, NULL, NULL);
     }
     if (match(p, TOKEN_STRING)) {
         Token *str = previous(p);
-        return create_ast_node(NODE_STRING, str->value, NULL, NULL);
+        return create_ast_node(NODE_STRING, str->value, NULL, NULL, NULL);
     }
     if (match(p, TOKEN_IDENTIFIER)) {
         Token *id = previous(p);
-        return create_ast_node(NODE_IDENTIFIER, id->value, NULL, NULL);
+        return create_ast_node(NODE_IDENTIFIER, id->value, NULL, NULL, NULL);
+    }
+    if (match(p, TOKEN_EZIOKWU)) {
+        return create_ast_node(NODE_BOOL, "eziokwu", NULL, NULL, NULL);
+    }
+    if (match(p, TOKEN_UGHA)) {
+        return create_ast_node(NODE_BOOL, "ụgha", NULL, NULL, NULL);
     }
     if (match(p, TOKEN_LPAREN)) {
         ASTNode *expr = expression(p);

@@ -4,13 +4,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef enum { VAL_NUMBER, VAL_STRING } ValueType;
+typedef enum { VAL_NUMBER, VAL_STRING, VAL_BOOL } ValueType;
 
 typedef struct {
     ValueType type;
     union {
         double number;
         char *string;
+        int boolean;
     } as;
 } Value;
 
@@ -49,10 +50,13 @@ static void set_var(const char *name, Value value) {
             free(v->value.as.string);
     }
     v->value.type = value.type;
-    if (value.type == VAL_STRING)
+    if (value.type == VAL_STRING) {
         v->value.as.string = string_duplicate(value.as.string);
-    else
+    } else if (value.type == VAL_BOOL) {
+        v->value.as.boolean = value.as.boolean;
+    } else {
         v->value.as.number = value.as.number;
+    }
 }
 
 static Value get_var_value(const char *name) {
@@ -67,8 +71,10 @@ static Value get_var_value(const char *name) {
     if (v->value.type == VAL_STRING) {
         Value copy = {VAL_STRING, {.string = string_duplicate(v->value.as.string)}};
         return copy;
+    } else if (v->value.type == VAL_BOOL) {
+        return (Value){VAL_BOOL, {.boolean = v->value.as.boolean}};
     }
-    return v->value;
+    return (Value){VAL_NUMBER, {.number = v->value.as.number}};
 }
 
 static void free_vars(void) {
@@ -84,6 +90,13 @@ static void free_vars(void) {
 }
 
 static Value eval(ASTNode *node);
+static void exec_stmt(ASTNode *node);
+
+static void exec_block(ASTNode *block) {
+    for (ASTNode *n = block; n != NULL; n = n->right) {
+        exec_stmt(n->left);
+    }
+}
 
 static void exec_stmt(ASTNode *node) {
     if (!node) return;
@@ -100,8 +113,42 @@ static void exec_stmt(ASTNode *node) {
             if (val.type == VAL_STRING) {
                 printf("%s\n", val.as.string);
                 free(val.as.string);
-            } else {
+            } else if (val.type == VAL_NUMBER) {
                 printf("%g\n", val.as.number);
+            } else {
+                printf(val.as.boolean ? "eziokwu\n" : "ụgha\n");
+            }
+            break;
+        }
+        case NODE_IF_STMT: {
+            Value cond = eval(node->left);
+            int truth = 0;
+            if (cond.type == VAL_BOOL) truth = cond.as.boolean;
+            else if (cond.type == VAL_NUMBER) truth = cond.as.number != 0;
+            else if (cond.type == VAL_STRING) truth = cond.as.string[0] != '\0';
+            if (cond.type == VAL_STRING) free(cond.as.string);
+            if (truth)
+                exec_block(node->right);
+            else if (node->third)
+                exec_block(node->third);
+            break;
+        }
+        case NODE_WHILE_STMT: {
+            const int MAX_ITERS = 10000;
+            int iter = 0;
+            while (1) {
+                if (iter++ > MAX_ITERS) {
+                    report_error("Possible infinite loop detected", -1);
+                    break;
+                }
+                Value cond = eval(node->left);
+                int truth = 0;
+                if (cond.type == VAL_BOOL) truth = cond.as.boolean;
+                else if (cond.type == VAL_NUMBER) truth = cond.as.number != 0;
+                else if (cond.type == VAL_STRING) truth = cond.as.string[0] != '\0';
+                if (cond.type == VAL_STRING) free(cond.as.string);
+                if (!truth) break;
+                exec_block(node->right);
             }
             break;
         }
@@ -156,6 +203,38 @@ static Value eval_binary(Value left, Value right, const char *op) {
             return (Value){VAL_NUMBER, {.number = 0}};
         }
         return (Value){VAL_NUMBER, {.number = left.as.number / right.as.number}};
+    } else if (strcmp(op, "==") == 0) {
+        if (left.type == VAL_STRING && right.type == VAL_STRING) {
+            return (Value){VAL_BOOL, {.boolean = strcmp(left.as.string, right.as.string) == 0}};
+        } else if (left.type == VAL_NUMBER && right.type == VAL_NUMBER) {
+            return (Value){VAL_BOOL, {.boolean = left.as.number == right.as.number}};
+        } else if (left.type == VAL_BOOL && right.type == VAL_BOOL) {
+            return (Value){VAL_BOOL, {.boolean = left.as.boolean == right.as.boolean}};
+        }
+        report_error("Type mismatch for '=='", -1);
+        return (Value){VAL_BOOL, {.boolean = 0}};
+    } else if (strcmp(op, "!=") == 0) {
+        if (left.type == VAL_STRING && right.type == VAL_STRING) {
+            return (Value){VAL_BOOL, {.boolean = strcmp(left.as.string, right.as.string) != 0}};
+        } else if (left.type == VAL_NUMBER && right.type == VAL_NUMBER) {
+            return (Value){VAL_BOOL, {.boolean = left.as.number != right.as.number}};
+        } else if (left.type == VAL_BOOL && right.type == VAL_BOOL) {
+            return (Value){VAL_BOOL, {.boolean = left.as.boolean != right.as.boolean}};
+        }
+        report_error("Type mismatch for '!='", -1);
+        return (Value){VAL_BOOL, {.boolean = 0}};
+    } else if (strcmp(op, "<") == 0 || strcmp(op, ">") == 0 ||
+               strcmp(op, "<=") == 0 || strcmp(op, ">=") == 0) {
+        if (left.type != VAL_NUMBER || right.type != VAL_NUMBER) {
+            report_error("Operands must be numbers for comparison", -1);
+            return (Value){VAL_BOOL, {.boolean = 0}};
+        }
+        int result = 0;
+        if (strcmp(op, "<") == 0) result = left.as.number < right.as.number;
+        else if (strcmp(op, ">") == 0) result = left.as.number > right.as.number;
+        else if (strcmp(op, "<=") == 0) result = left.as.number <= right.as.number;
+        else if (strcmp(op, ">=") == 0) result = left.as.number >= right.as.number;
+        return (Value){VAL_BOOL, {.boolean = result}};
     }
     report_error("Unknown binary operator", -1);
     return (Value){VAL_NUMBER, {.number = 0}};
@@ -169,6 +248,8 @@ static Value eval(ASTNode *node) {
             return (Value){VAL_STRING, {.string = string_duplicate(node->value)}};
         case NODE_IDENTIFIER:
             return get_var_value(node->value);
+        case NODE_BOOL:
+            return (Value){VAL_BOOL, {.boolean = strcmp(node->value, "eziokwu") == 0}};
         case NODE_BINARY_EXPR: {
             Value left = eval(node->left);
             Value right = eval(node->right);
@@ -184,9 +265,7 @@ static Value eval(ASTNode *node) {
 }
 
 void interpret(ASTNode *ast) {
-    for (ASTNode *node = ast; node != NULL; node = node->right) {
-        exec_stmt(node->left);
-    }
+    exec_block(ast);
     free_vars();
 }
 
