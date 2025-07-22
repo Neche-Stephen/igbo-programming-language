@@ -1,0 +1,16 @@
+// Educational example: multiplication table
+// Prints 2 times table from 1 to 5
+// Expected output:
+// 2 x 1 = 2
+// 2 x 2 = 4
+// 2 x 3 = 6
+// 2 x 4 = 8
+// 2 x 5 = 10
+
+dee num = 2
+dee i = 1
+
+mgbe i <= 5 {
+    gosi("2 x " + i + " = " + (num * i))
+    dee i = i + 1
+}

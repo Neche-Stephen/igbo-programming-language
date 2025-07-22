@@ -1,0 +1,25 @@
+// Interactive story example
+// Set 'nhoputa' (choice) to 1 or 2 to pick a path
+// Expected output when nhoputa = 1:
+// Welcome,
+// Ada
+// You stand at a crossroads.
+// You walk to the village market.
+// There you buy some yam.
+
+dee aha = "Ada"
+
+gosi("Welcome,")
+gosi(aha)
+
+gosi("You stand at a crossroads.")
+
+dee nhoputa = 1
+
+ma nhoputa == 1 {
+    gosi("You walk to the village market.")
+    gosi("There you buy some yam.")
+} mana {
+    gosi("You walk to the river.")
+    gosi("You see a fisherman casting his net.")
+}
