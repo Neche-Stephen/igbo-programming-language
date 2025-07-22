@@ -1,0 +1,26 @@
+// Number guessing demonstration
+// The program guesses numbers until it matches the secret
+// Expected output:
+// Guessing:
+// 1
+// Guessing:
+// 2
+// Guessing:
+// 3
+// Found the number:
+// 4
+
+dee secret = 4
+dee guess = 1
+
+mgbe guess <= 10 {
+    ma guess == secret {
+        gosi("Found the number:")
+        gosi(secret)
+        dee guess = 11
+    } mana {
+        gosi("Guessing:")
+        gosi(guess)
+        dee guess = guess + 1
+    }
+}

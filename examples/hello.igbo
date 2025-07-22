@@ -1,1 +1,6 @@
-GOSI "Ndewo, uwa!"
+// Hello World example
+// gosi: print a value
+// Expected output:
+// Ndewo, uwa!
+
+gosi("Ndewo, uwa!")
